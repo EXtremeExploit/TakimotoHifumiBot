@@ -1,0 +1,23 @@
+{
+  "name": "takimotohifumibot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/EXtremeExploit/TakimotoHifumiBot.git"
+  },
+  "author": "EXtremeExploit",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/EXtremeExploit/TakimotoHifumiBot/issues"
+  },
+  "homepage": "https://github.com/EXtremeExploit/TakimotoHifumiBot#readme",
+  "dependencies": {
+    "discord.js": "^11.4.2",
+    "dotenv": "^6.0.0"
+  }
+}
