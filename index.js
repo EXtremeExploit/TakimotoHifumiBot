@@ -8,7 +8,7 @@ client.on('ready',() => {
 });
 
 client.on('guildMemberAdd', (member) => {
-    var channel = member.guild.channels.find((ch) => ch.id == '485096996047421440');
+    var channel = member.guild.channels.find((ch) => ch.id == '485083554351546381');
     channel.send('W-Welcome to the server '+member+' p-please enjoy your time here <a:HifumiSurprise:486547902660083723>', {
         file: './welcome.gif'
     });
