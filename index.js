@@ -147,7 +147,7 @@ client.on('message', async (msg) => {
 
     if (msg.channel.id == ch_nsfw_access_id) {
         if (!msg.author.id == client.user.id) {
-            if (msg.content == prefix + 'NSFW') {
+            if (msg.content == '.NSFW') {
                 if (!msg.member.roles.find((r) => r.name == roles.nsfw.name)) {
                     msg.member.addRole(roles.nsfw);
                     msg.delete(1000);
