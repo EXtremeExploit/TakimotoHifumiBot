@@ -22,10 +22,6 @@ async function toggleColorToMember(msg, role, roles) {
          * @param {discord.Message} msg 
          * @param {discord.Role} role 
          */
-        async function addAndDeleteMSG(msg, role) {
-            await msg.member.addRole(role);
-            await msg.delete(1000);
-        }
 
         await msg.member.removeRoles([
             roles.colors.purple,
@@ -43,7 +39,10 @@ async function toggleColorToMember(msg, role, roles) {
             roles.colors.red,
             roles.colors.dark_red,
         ]);
-        await setTimeout(addAndDeleteMSG(msg, role), 1000);
+        await setTimeout(async function () {
+            await msg.member.addRole(role);
+            await msg.delete(1000);
+        }, 1000);
     } else {
         await msg.member.removeRole(role);
         msg.delete(1000);
