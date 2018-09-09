@@ -17,7 +17,6 @@ var guild_id = process.env.guild_id;
  */
 function toggleColorToMember(msg, role, roles) {
     if (!msg.member.roles.find((r) => r.name == role.name)) {
-        var EveryRole = roles[0]
         msg.member.removeRoles([
             roles.colors.purple,
             roles.colors.magenta,
@@ -34,6 +33,7 @@ function toggleColorToMember(msg, role, roles) {
             roles.colors.red,
             roles.colors.dark_red,
         ]);
+        setTimeout(1000);
         msg.member.addRole(role);
         msg.delete(1000);
     } else {
