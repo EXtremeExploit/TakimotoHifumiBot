@@ -17,6 +17,11 @@ var guild_id = process.env.guild_id;
  */
 function toggleColorToMember(msg, role, roles) {
     if (!msg.member.roles.find((r) => r.name == role.name)) {
+        function addAndDeleteMSG(msg, role) {
+            msg.member.addRole(role);
+            msg.delete(1000);
+        }
+
         msg.member.removeRoles([
             roles.colors.purple,
             roles.colors.magenta,
@@ -33,9 +38,7 @@ function toggleColorToMember(msg, role, roles) {
             roles.colors.red,
             roles.colors.dark_red,
         ]);
-        setTimeout(1000);
-        msg.member.addRole(role);
-        msg.delete(1000);
+        setTimeout(addAndDeleteMSG(msg, role), 1000);
     } else {
         msg.member.removeRole(role);
         msg.delete(1000);
@@ -69,42 +72,42 @@ client.on('message', async (msg) => {
         case '.sendNAMECOLOR':
             client.guilds.find((g) => g.id == guild_id).channels.find((ch) => ch.id == ch_name_color_id).send('<:dark_red:485125836849283103> : Dark Red\n' +
                 '.`darkred`\n' +
-                '\n'+
+                '\n' +
                 '<:red:485125793270464552> : Red\n' +
                 '.`red`\n' +
-                '\n'+
+                '\n' +
                 '<:orange:485125758465867796> : Orange\n' +
                 '.`orange`\n' +
-                '\n'+
+                '\n' +
                 '<:brown:485125717282127872> : Brown\n' +
                 '.`brown`\n' +
-                '\n'+
+                '\n' +
                 '<:gold:485125481805512714> : Gold\n' +
                 '.`gold`\n' +
-                '\n'+
+                '\n' +
                 '<:yellow:485125443717038087> : Yellow\n' +
                 '.`yellow`\n' +
-                '\n'+
+                '\n' +
                 '<:navy:485125406605836290> : Navy\n' +
                 '.`navy`\n' +
-                '\n'+
+                '\n' +
                 '<:green:485125361017946113> : Green\n' +
                 '.`green`\n' +
-                '\n'+
+                '\n' +
                 '<:dark_blue:485125157518704652> : Dark Blue\n' +
                 '.`darkblue`\n' +
-                '\n'+
+                '\n' +
                 '<:blue:485124756476002304> : Blue\n' +
                 '.`blue`\n' +
                 '<:cyan:485124676612521999> : Cyan\n' +
                 '.`cyan`\n' +
-                '\n'+
+                '\n' +
                 '<:pink:485124544399540248> : Pink\n' +
                 '.`pink`\n' +
-                '\n'+
+                '\n' +
                 '<:magenta:485124483364028416> : Magenta\n' +
                 '.`magenta`\n' +
-                '\n'+
+                '\n' +
                 '<:purple:485124431023439872> : Purple\n' +
                 '.`purple`');
     }
