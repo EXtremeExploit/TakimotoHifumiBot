@@ -1,4 +1,5 @@
 require('dotenv').config();
+console.log('Starting...')
 var discord = require('discord.js');
 var client = new discord.Client();
 
