@@ -35,10 +35,10 @@ function toggleColorToMember(msg, role, roles) {
             roles.colors.dark_red,
         ]);
         msg.member.addRole(role);
-        msg.delete();
+        msg.delete(1000);
     } else {
         msg.member.removeRole(role);
-        msg.delete();
+        msg.delete(1000);
     }
 }
 
@@ -143,13 +143,13 @@ client.on('message', async (msg) => {
             if (msg.content == prefix + 'NSFW') {
                 if (!msg.member.roles.find((r) => r.name == roles.nsfw.name)) {
                     msg.member.addRole(roles.nsfw);
-                    msg.delete();
+                    msg.delete(1000);
                 } else {
                     msg.member.removeRole(roles.nsfw);
-                    msg.delete();
+                    msg.delete(1000);
                 }
             } else {
-                msg.delete();
+                msg.delete(1000);
             }
         }
     }
@@ -200,7 +200,7 @@ client.on('message', async (msg) => {
                     toggleColorToMember(msg, roles.colors.dark_red, roles);
                     break;
                 default:
-                    msg.delete();
+                    msg.delete(1000);
 
             }
         }
