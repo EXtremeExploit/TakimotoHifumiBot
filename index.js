@@ -17,6 +17,11 @@ var guild_id = process.env.guild_id;
  */
 async function toggleColorToMember(msg, role, roles) {
     if (!msg.member.roles.find((r) => r.name == role.name)) {
+        /**
+         * 
+         * @param {discord.Message} msg 
+         * @param {discord.Role} role 
+         */
         async function addAndDeleteMSG(msg, role) {
             await msg.member.addRole(role);
             await msg.delete(1000);
