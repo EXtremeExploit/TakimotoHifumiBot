@@ -15,14 +15,14 @@ var guild_id = process.env.guild_id;
  * @param {discord.Role} role 
  * @param {Object} roles
  */
-function toggleColorToMember(msg, role, roles) {
+async function toggleColorToMember(msg, role, roles) {
     if (!msg.member.roles.find((r) => r.name == role.name)) {
-        function addAndDeleteMSG(msg, role) {
-            msg.member.addRole(role);
-            msg.delete(1000);
+        async function addAndDeleteMSG(msg, role) {
+            await msg.member.addRole(role);
+            await msg.delete(1000);
         }
 
-        msg.member.removeRoles([
+        await msg.member.removeRoles([
             roles.colors.purple,
             roles.colors.magenta,
             roles.colors.pink,
@@ -38,9 +38,9 @@ function toggleColorToMember(msg, role, roles) {
             roles.colors.red,
             roles.colors.dark_red,
         ]);
-        setTimeout(addAndDeleteMSG(msg, role), 1000);
+        await setTimeout(addAndDeleteMSG(msg, role), 1000);
     } else {
-        msg.member.removeRole(role);
+        await msg.member.removeRole(role);
         msg.delete(1000);
     }
 }
