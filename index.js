@@ -168,7 +168,7 @@ client.on('message', async (msg) => {
                     '.`purple`');
             }
             break;
-        case 'eval':
+        case '.eval':
             if (msg.author.id == owner_id) {
                 try {
                     const code = args;
