@@ -1,13 +1,31 @@
 require('dotenv').config();
-console.log('Starting...')
+console.log('Starting...');
+// Discord
 var discord = require('discord.js');
 var client = new discord.Client();
+
+// Reddit
+var _reddit = require('snoowrap');
+var snoostorm = require('snoostorm');
+var r = new _reddit({
+    username: process.env.reddit_username,
+    password: process.env.reddit_password,
+    clientSecret: process.env.reddit_clientSecret,
+    clientId: process.env.reddit_clientID,
+    userAgent: 'r/TakimotoHifumi Discord Bot',
+
+});
+const reddit = new snoostorm(r);
 
 var prefix = process.env.prefix;
 var ch_arrivals_id = process.env.ch_arrivals_id;
 var ch_nsfw_access_id = process.env.ch_nsfw_access_id;
 var ch_name_color_id = process.env.ch_name_color_id;
 var guild_id = process.env.guild_id;
+var webhook = {
+    id: process.env.webhook_ID,
+    token: process.env.webhook_Token
+}
 
 /**
  * 
@@ -51,6 +69,37 @@ async function toggleColorToMember(msg, role, roles) {
 
 client.on('ready', () => {
     console.log('Ready!');
+});
+
+reddit.SubmissionStream({
+    subreddit: 'TakimotoHifumi'
+}).on('submission', async (s) => {
+    var embed = new discord.RichEmbed();
+    if (s.preview) {
+        embed.setColor([155, 89, 182])
+            .setURL('https://www.reddit.com' + s.permalink)
+            .setTitle(s.title)
+            .setImage(s.preview.images[0].source.url)
+            .addField('Author', '[' + s.author.name + '](https://www.reddit.com/u/' + s.author.name + ')', true);
+    } else {
+        if (s.selftext !== '') {
+            if (s.selftext.length > 2048) s.selftext = s.selftext.substring(0, 2048 - 3) + '...';
+            embed.setColor([155, 89, 182])
+                .setURL('https://www.reddit.com' + s.permalink)
+                .setTitle(s.title)
+                .setDescription(s.selftext)
+                .addField('Author', '[' + s.author.name + '](https://www.reddit.com/u/' + s.author.name + ')', true);
+        } else {
+            embed.setColor([155, 89, 182])
+                .setURL('https://www.reddit.com' + s.permalink)
+                .setTitle(s.title)
+                .addField('Author', '[' + s.author.name + '](https://www.reddit.com/u/' + s.author.name + ')', true);
+        }
+    }
+
+    client.fetchWebhook(webhook.id, webhook.token).then((w) => {
+        w.send(embed);
+    });
 });
 
 client.on('guildMemberAdd', (member) => {
@@ -148,7 +197,7 @@ client.on('message', async (msg) => {
     if (msg.channel.id == ch_nsfw_access_id) {
         if (msg.author.id == client.user.id) {
             return;
-        }else{
+        } else {
             if (msg.content == '.NSFW') {
                 if (!msg.member.roles.find((r) => r.name == roles.nsfw.name)) {
                     msg.member.addRole(roles.nsfw);
