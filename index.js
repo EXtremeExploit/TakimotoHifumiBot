@@ -118,13 +118,13 @@ client.on('message', async (msg) => {
     var command = messageArray[0].replace(prefix, '');
     var args = messageArray.slice(1).join(' ');
 
-    switch (msg.content) {
-        case '.sendNSFWaccess':
+    switch (command) {
+        case 'sendNSFWaccess':
             if (msg.author.id == owner_id) {
                 client.guilds.find((g) => g.id == guild_id).channels.find((ch) => ch.id == ch_nsfw_access_id).send('Send `.NSFW` to get NSFW permissions, send again if you don\'t want them anymore');
             }
             break;
-        case '.sendNAMECOLOR':
+        case 'sendNAMECOLOR':
             if (msg.author.id == owner_id) {
                 client.guilds.find((g) => g.id == guild_id).channels.find((ch) => ch.id == ch_name_color_id).send('<:dark_red:485125836849283103> : Dark Red\n' +
                     '.`darkred`\n' +
@@ -168,7 +168,7 @@ client.on('message', async (msg) => {
                     '.`purple`');
             }
             break;
-        case '.eval':
+        case 'eval':
             if (msg.author.id == owner_id) {
                 try {
                     const code = args;
