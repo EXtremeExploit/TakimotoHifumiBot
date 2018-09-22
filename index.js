@@ -13,7 +13,6 @@ var r = new _reddit({
     clientSecret: process.env.reddit_clientSecret,
     clientId: process.env.reddit_clientID,
     userAgent: 'r/TakimotoHifumi Discord Bot',
-
 });
 const reddit = new snoostorm(r);
 
