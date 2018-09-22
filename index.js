@@ -25,6 +25,7 @@ var webhook = {
     id: process.env.webhook_ID,
     token: process.env.webhook_Token
 }
+var owner_id = process.env.owner_id;
 
 /**
  * 
@@ -119,49 +120,74 @@ client.on('message', async (msg) => {
 
     switch (msg.content) {
         case '.sendNSFWaccess':
-            client.guilds.find((g) => g.id == guild_id).channels.find((ch) => ch.id == ch_nsfw_access_id).send('Send `.NSFW` to get NSFW permissions, send again if you don\'t want them anymore');
+            if (msg.author.id == owner_id) {
+                client.guilds.find((g) => g.id == guild_id).channels.find((ch) => ch.id == ch_nsfw_access_id).send('Send `.NSFW` to get NSFW permissions, send again if you don\'t want them anymore');
+            }
             break;
         case '.sendNAMECOLOR':
-            client.guilds.find((g) => g.id == guild_id).channels.find((ch) => ch.id == ch_name_color_id).send('<:dark_red:485125836849283103> : Dark Red\n' +
-                '.`darkred`\n' +
-                '\n' +
-                '<:red:485125793270464552> : Red\n' +
-                '.`red`\n' +
-                '\n' +
-                '<:orange:485125758465867796> : Orange\n' +
-                '.`orange`\n' +
-                '\n' +
-                '<:brown:485125717282127872> : Brown\n' +
-                '.`brown`\n' +
-                '\n' +
-                '<:gold:485125481805512714> : Gold\n' +
-                '.`gold`\n' +
-                '\n' +
-                '<:yellow:485125443717038087> : Yellow\n' +
-                '.`yellow`\n' +
-                '\n' +
-                '<:navy:485125406605836290> : Navy\n' +
-                '.`navy`\n' +
-                '\n' +
-                '<:green:485125361017946113> : Green\n' +
-                '.`green`\n' +
-                '\n' +
-                '<:dark_blue:485125157518704652> : Dark Blue\n' +
-                '.`darkblue`\n' +
-                '\n' +
-                '<:blue:485124756476002304> : Blue\n' +
-                '.`blue`\n' +
-                '<:cyan:485124676612521999> : Cyan\n' +
-                '.`cyan`\n' +
-                '\n' +
-                '<:pink:485124544399540248> : Pink\n' +
-                '.`pink`\n' +
-                '\n' +
-                '<:magenta:485124483364028416> : Magenta\n' +
-                '.`magenta`\n' +
-                '\n' +
-                '<:purple:485124431023439872> : Purple\n' +
-                '.`purple`');
+            if (msg.author.id == owner_id) {
+                client.guilds.find((g) => g.id == guild_id).channels.find((ch) => ch.id == ch_name_color_id).send('<:dark_red:485125836849283103> : Dark Red\n' +
+                    '.`darkred`\n' +
+                    '\n' +
+                    '<:red:485125793270464552> : Red\n' +
+                    '.`red`\n' +
+                    '\n' +
+                    '<:orange:485125758465867796> : Orange\n' +
+                    '.`orange`\n' +
+                    '\n' +
+                    '<:brown:485125717282127872> : Brown\n' +
+                    '.`brown`\n' +
+                    '\n' +
+                    '<:gold:485125481805512714> : Gold\n' +
+                    '.`gold`\n' +
+                    '\n' +
+                    '<:yellow:485125443717038087> : Yellow\n' +
+                    '.`yellow`\n' +
+                    '\n' +
+                    '<:navy:485125406605836290> : Navy\n' +
+                    '.`navy`\n' +
+                    '\n' +
+                    '<:green:485125361017946113> : Green\n' +
+                    '.`green`\n' +
+                    '\n' +
+                    '<:dark_blue:485125157518704652> : Dark Blue\n' +
+                    '.`darkblue`\n' +
+                    '\n' +
+                    '<:blue:485124756476002304> : Blue\n' +
+                    '.`blue`\n' +
+                    '<:cyan:485124676612521999> : Cyan\n' +
+                    '.`cyan`\n' +
+                    '\n' +
+                    '<:pink:485124544399540248> : Pink\n' +
+                    '.`pink`\n' +
+                    '\n' +
+                    '<:magenta:485124483364028416> : Magenta\n' +
+                    '.`magenta`\n' +
+                    '\n' +
+                    '<:purple:485124431023439872> : Purple\n' +
+                    '.`purple`');
+            }
+            break;
+        case 'eval':
+            if (msg.author.id == owner_id) {
+                try {
+                    const code = args;
+                    var evaled = eval(code);
+                    if (typeof evaled !== 'string')
+                        evaled = require('util').inspect(evaled);
+                    msg.channel.send(new discord.RichEmbed()
+                        .setColor([255, 0, 0])
+                        .setTitle('Eval Command')
+                        .addField('Input', `\`\`\`\n${code}\n\`\`\``)
+                        .addField('Output:', `\`\`\`xl\n${evaled}\`\`\``));
+                } catch (err) {
+                    msg.channel.send(new discord.RichEmbed()
+                        .setTitle('ERROR')
+                        .setColor([255, 0, 0])
+                        .setDescription('```xl\n' + err + '```'));
+                }
+            }
+            break;
     }
 })
 
