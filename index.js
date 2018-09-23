@@ -104,9 +104,19 @@ reddit.SubmissionStream({
 
 client.on('guildMemberAdd', (member) => {
     var channel = member.guild.channels.find((ch) => ch.id == ch_arrivals_id);
+    var roles = {
+        bot: member.guild.roles.find((r) => r.name == 'Robot 🤖'),
+        member: member.guild.roles.find((r) => r.name == 'Members 👤')
+    }
     channel.send('W-Welcome to the server ' + member + ' p-please enjoy your time here <a:HifumiSurprise:486547902660083723>', {
         file: './welcome.gif'
     });
+
+    if (member.user.bot) {
+        member.addRole(roles.bot);
+    } else {
+        member.addRole(roles.member);
+    }
 });
 
 client.on('message', async (msg) => {
@@ -288,7 +298,7 @@ client.on('message', async (msg) => {
             }
         }
     }
-})
+});
 
 
 client.login(process.env.TOKEN);
