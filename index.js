@@ -233,7 +233,7 @@ client.on('message', async (msg) => {
         if (msg.author.id == client.user.id) {
             return;
         } else {
-            if (msg.content == '.NSFW') {
+            if (msg.content.toUpperCase() == '.NSFW') {
                 if (!msg.member.roles.find((r) => r.name == roles.nsfw.name)) {
                     msg.member.addRole(roles.nsfw);
                     msg.delete(1000);
