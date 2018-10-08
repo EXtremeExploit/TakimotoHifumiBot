@@ -20,12 +20,21 @@ var prefix = process.env.prefix;
 var ch_arrivals_id = process.env.ch_arrivals_id;
 var ch_nsfw_access_id = process.env.ch_nsfw_access_id;
 var ch_name_color_id = process.env.ch_name_color_id;
+var ch_logs_id = process.env.ch_logs_id;
 var guild_id = process.env.guild_id;
 var webhook = {
     id: process.env.webhook_ID,
     token: process.env.webhook_Token
 }
 var owner_id = process.env.owner_id;
+
+var fs = require('fs');
+
+var testers = [
+    483675893458403331
+];
+var cooldown = new Set();
+var cds = 5;
 
 /**
  * 
@@ -67,8 +76,21 @@ async function toggleColorToMember(msg, role, roles) {
     }
 }
 
+async function sendToLogs(msg) {
+    member.guild.channels.find((ch) => ch.id == ch_logs_id).send(msg);
+}
+
 client.on('ready', () => {
     console.log('Ready!');
+    client.user.setPresence({
+        afk: false,
+        status: 'online',
+        game: {
+            name: 'prefix: .',
+            type: 'WATCHING',
+            url: null
+        }
+    })
 });
 
 reddit.SubmissionStream({
@@ -105,6 +127,7 @@ reddit.SubmissionStream({
 client.on('guildMemberAdd', (member) => {
     var channel = member.guild.channels.find((ch) => ch.id == ch_arrivals_id);
     var roles = {
+        tester: member.guild.roles.find((r) => r.name == 'Tester ⚙️'),
         bot: member.guild.roles.find((r) => r.name == 'Robot 🤖'),
         member: member.guild.roles.find((r) => r.name == 'Members 👤')
     }
@@ -112,12 +135,32 @@ client.on('guildMemberAdd', (member) => {
         file: './welcome.gif'
     });
 
+    sendToLogs(new discord.RichEmbed()
+        .setTitle('User Joined')
+        .setColor(0x00FF00)
+        .addField('User', member.user.tag + '/' + member.id + '\n' +
+            '**Joined Discord:** ' + member.user.createdAt.toUTCString())
+        .setTimestamp(new Date().toUTCString));
+
     if (member.user.bot) {
         member.addRole(roles.bot);
     } else {
-        member.addRole(roles.member);
+        if (testers.includes(member.id)) {
+            member.addRole(roles.tester)
+        } else {
+            member.addRole(roles.member);
+        }
     }
 });
+
+client.on('guildMemberRemove', (member) => {
+    sendToLogs(new discord.RichEmbed()
+        .setTitle('User Removed')
+        .setColor(0xFF0000)
+        .addField('User', member.user.tag + '/' + member.id + '\n' +
+            '**Joined Discord:** ' + member.user.createdAt.toUTCString())
+        .setTimestamp(new Date().toUTCString));
+})
 
 client.on('message', async (msg) => {
     if (!msg.guild) return;
@@ -198,8 +241,116 @@ client.on('message', async (msg) => {
                 }
             }
             break;
+        case 'kick':
+            if (msg.member.hasPermission(['KICK_MEMBERS']) || msg.member.hasPermission(['ADMINISTRATOR'])) {
+                if (msg.mentions.members.first()) {
+                    if (msg.member.user.id == msg.mentions.members.first().id) {
+                        msg.channel.send(new discord.RichEmbed()
+                            .setColor([255, 0, 0])
+                            .setDescription('Why do you want to kick yourself...?')
+                            .setTitle('Are you serious?'));
+                    } else {
+                        if (msg.mentions.members.first().id == client.user.id) {
+                            msg.channel.send(new discord.RichEmbed()
+                                .setColor([255, 0, 0])
+                                .setDescription('WHY ME!!!???')
+                                .setTitle(';-;'));
+                        } else {
+                            if (msg.mentions.members.first().kickable) {
+                                msg.mentions.members.first().kick(".kick command by: " + msg.author.tag).then((member) => {
+                                    msg.channel.send(new discord.RichEmbed()
+                                        .setColor([255, 0, 0])
+                                        .setTitle('Kicked')
+                                        .setDescription('Succesfully kicked: ' + member.user.tag + ' by ' + msg.author.tag));
+                                });
+                            } else {
+                                msg.channel.send(new discord.RichEmbed()
+                                    .setColor([255, 0, 0])
+                                    .setTitle('Kick Error')
+                                    .setDescription('I don\'t have permissions to do that'));
+                            }
+                        }
+                    }
+                } else {
+                    msg.channel.send(new discord.RichEmbed()
+                        .setColor([255, 0, 0])
+                        .setDescription('Please specify an user!'));
+
+                }
+            } else {
+                msg.channel.send(new discord.RichEmbed()
+                    .setAuthor(msg.member.user.username, msg.member.user.displayAvatarURL)
+                    .setTitle('ERROR')
+                    .setDescription('You dont have permissions to run that command.')
+                    .setColor([255, 0, 0]));
+            }
+            break;
+        case 'ban':
+            if (msg.member.hasPermission(['BAN_MEMBERS']) || msg.member.hasPermission(['ADMINISTRATOR'])) {
+                if (msg.mentions.members.first()) {
+                    if (msg.member.user.id == msg.mentions.members.first().id) {
+                        msg.channel.send(new discord.RichEmbed()
+                            .setColor([255, 0, 0])
+                            .setDescription('Why do you want to ban yourself...?')
+                            .setTitle('Are you serious?'));
+                    } else {
+                        if (msg.mentions.members.first().id == client.user.id) {
+                            msg.channel.send(new discord.RichEmbed()
+                                .setColor([255, 0, 0])
+                                .setDescription('WHY ME!!!???')
+                                .setTitle(';-;'));
+                        } else {
+                            if (msg.mentions.members.first().bannable) {
+                                msg.mentions.members.first().ban({ reason: ".ban command by: " + msg.author.tag }).then((member) => {
+                                    msg.channel.send(new discord.RichEmbed()
+                                        .setColor([255, 0, 0])
+                                        .setTitle('Banned')
+                                        .setDescription('Succesfully banned: ' + member.user.tag + ' by ' + msg.author.tag));
+                                    sendToLogs()
+                                });
+                            } else {
+                                msg.channel.send(new discord.RichEmbed()
+                                    .setColor([255, 0, 0])
+                                    .setTitle('Ban Error')
+                                    .setDescription('I don\'t have permissions to do that'));
+                            }
+                        }
+                    }
+                } else {
+                    msg.channel.send(new discord.RichEmbed()
+                        .setColor([255, 0, 0])
+                        .setDescription('Please specify an user!'));
+
+                }
+            } else {
+                msg.channel.send(new discord.RichEmbed()
+                    .setAuthor(msg.member.user.username, msg.member.user.displayAvatarURL)
+                    .setTitle('ERROR')
+                    .setDescription('You dont have permissions to run that command.')
+                    .setColor([255, 0, 0]));
+            }
+            break;
+        case 'toggleMute':
+        if( msg.member.hasPermission(['ADMINISTRATOR'])){
+            var config = require('./config.json');
+            if (config.mute == true) {
+                config.mute = false;
+                fs.writeFile('config.json', '{\n    "mute": false\n}', (e) => {
+                    msg.channel.send('Toggled Mute to false');
+                });
+            } else {
+                if (config.mute == false) {
+                    config.mute = true;
+                    fs.writeFile('config.json', '{\n    "mute": true\n}', (e) => {
+                        msg.channel.send('Toggled Mute to true');
+                    });
+                }
+            }
+        }
+            
+            break;
     }
-})
+});
 
 client.on('message', async (msg) => {
     if (!msg.guild) return;
@@ -210,6 +361,7 @@ client.on('message', async (msg) => {
     var args = messageArray.slice(1).join(' ');
 
     var roles = {
+        muted: msg.guild.roles.find((r) => r.name == 'Muted'),
         nsfw: msg.guild.roles.find((r) => r.name == 'NSFW 🔞'),
         colors: {
             purple: msg.guild.roles.find((r) => r.name == 'Purple'),
@@ -227,6 +379,22 @@ client.on('message', async (msg) => {
             red: msg.guild.roles.find((r) => r.name == 'Red'),
             dark_red: msg.guild.roles.find((r) => r.name == 'Dark Red'),
         }
+    }
+
+    if (require('./config.json').mute == true) {
+        if (cooldown.has(msg.author.id)) {
+            msg.delete(100);
+            msg.reply('Don\'t spam, wait atleast 5 secs').then((message) => {
+                message.delete(cds * 1000);
+            });
+        }
+        if (msg.author.id == client.user.id) {
+        } else {
+            cooldown.add(msg.author.id);
+        }
+        setTimeout(() => {
+            cooldown.delete(msg.author.id)
+        }, cds * 1000)
     }
 
     if (msg.channel.id == ch_nsfw_access_id) {
@@ -294,7 +462,6 @@ client.on('message', async (msg) => {
                     break;
                 default:
                     msg.delete(1000);
-
             }
         }
     }
