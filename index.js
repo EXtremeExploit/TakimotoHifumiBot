@@ -21,6 +21,7 @@ var ch_arrivals_id = process.env.ch_arrivals_id;
 var ch_nsfw_access_id = process.env.ch_nsfw_access_id;
 var ch_name_color_id = process.env.ch_name_color_id;
 var ch_logs_id = process.env.ch_logs_id;
+var ch_vent_acess_id = process.env.ch_vent_acess_id;
 var guild_id = process.env.guild_id;
 var webhook = {
     id: process.env.webhook_ID,
@@ -76,8 +77,8 @@ async function toggleColorToMember(msg, role, roles) {
     }
 }
 
-async function sendToLogs(msg) {
-    member.guild.channels.find((ch) => ch.id == ch_logs_id).send(msg);
+async function sendToLogs(guild, msg) {
+    guild.channels.find((ch) => ch.id == ch_logs_id).send(msg);
 }
 
 client.on('ready', () => {
@@ -135,7 +136,7 @@ client.on('guildMemberAdd', (member) => {
         file: './welcome.gif'
     });
 
-    sendToLogs(new discord.RichEmbed()
+    sendToLogs(member.guild, new discord.RichEmbed()
         .setTitle('User Joined')
         .setColor(0x00FF00)
         .addField('User', member.user.tag + '/' + member.id + '\n' +
@@ -154,7 +155,7 @@ client.on('guildMemberAdd', (member) => {
 });
 
 client.on('guildMemberRemove', (member) => {
-    sendToLogs(new discord.RichEmbed()
+    sendToLogs(member.guild, new discord.RichEmbed()
         .setTitle('User Removed')
         .setColor(0xFF0000)
         .addField('User', member.user.tag + '/' + member.id + '\n' +
@@ -179,46 +180,14 @@ client.on('message', async (msg) => {
             break;
         case 'sendNAMECOLOR':
             if (msg.author.id == owner_id) {
-                client.guilds.find((g) => g.id == guild_id).channels.find((ch) => ch.id == ch_name_color_id).send('<:dark_red:485125836849283103> : Dark Red\n' +
-                    '.`darkred`\n' +
-                    '\n' +
-                    '<:red:485125793270464552> : Red\n' +
-                    '.`red`\n' +
-                    '\n' +
-                    '<:orange:485125758465867796> : Orange\n' +
-                    '.`orange`\n' +
-                    '\n' +
-                    '<:brown:485125717282127872> : Brown\n' +
-                    '.`brown`\n' +
-                    '\n' +
-                    '<:gold:485125481805512714> : Gold\n' +
-                    '.`gold`\n' +
-                    '\n' +
-                    '<:yellow:485125443717038087> : Yellow\n' +
-                    '.`yellow`\n' +
-                    '\n' +
-                    '<:navy:485125406605836290> : Navy\n' +
-                    '.`navy`\n' +
-                    '\n' +
-                    '<:green:485125361017946113> : Green\n' +
-                    '.`green`\n' +
-                    '\n' +
-                    '<:dark_blue:485125157518704652> : Dark Blue\n' +
-                    '.`darkblue`\n' +
-                    '\n' +
-                    '<:blue:485124756476002304> : Blue\n' +
-                    '.`blue`\n' +
-                    '<:cyan:485124676612521999> : Cyan\n' +
-                    '.`cyan`\n' +
-                    '\n' +
-                    '<:pink:485124544399540248> : Pink\n' +
-                    '.`pink`\n' +
-                    '\n' +
-                    '<:magenta:485124483364028416> : Magenta\n' +
-                    '.`magenta`\n' +
-                    '\n' +
-                    '<:purple:485124431023439872> : Purple\n' +
-                    '.`purple`');
+                client.guilds.find((g) => g.id == guild_id).channels.find((ch) => ch.id == ch_name_color_id).send({
+                    file: './name-color.png'
+                });
+            }
+            break;
+        case 'sendVENT':
+            if (msg.author.id == owner_id) {
+                client.guilds.find((g) => g.id == guild_id).channels.find((ch) => ch.id == ch_vent_acess_id).send('Send `.vent` to get permissions for vent, send again if you don\'t want them anymore')
             }
             break;
         case 'eval':
@@ -306,7 +275,10 @@ client.on('message', async (msg) => {
                                         .setColor([255, 0, 0])
                                         .setTitle('Banned')
                                         .setDescription('Succesfully banned: ' + member.user.tag + ' by ' + msg.author.tag));
-                                    sendToLogs()
+                                    sendToLogs(msg.guild, new discord.RichEmbed()
+                                        .setTitle('User Banned')
+                                        .setColor([255, 0, 0])
+                                        .addField('By', msg.author.tag))
                                 });
                             } else {
                                 msg.channel.send(new discord.RichEmbed()
@@ -331,23 +303,22 @@ client.on('message', async (msg) => {
             }
             break;
         case 'toggleMute':
-        if( msg.member.hasPermission(['ADMINISTRATOR'])){
-            var config = require('./config.json');
-            if (config.mute == true) {
-                config.mute = false;
-                fs.writeFile('config.json', '{\n    "mute": false\n}', (e) => {
-                    msg.channel.send('Toggled Mute to false');
-                });
-            } else {
-                if (config.mute == false) {
-                    config.mute = true;
-                    fs.writeFile('config.json', '{\n    "mute": true\n}', (e) => {
-                        msg.channel.send('Toggled Mute to true');
+            if (msg.member.hasPermission(['ADMINISTRATOR'])) {
+                var config = require('./config.json');
+                if (config.mute == true) {
+                    config.mute = false;
+                    fs.writeFile('config.json', '{\n    "mute": false\n}', (e) => {
+                        msg.channel.send('Toggled Mute to false');
                     });
+                } else {
+                    if (config.mute == false) {
+                        config.mute = true;
+                        fs.writeFile('config.json', '{\n    "mute": true\n}', (e) => {
+                            msg.channel.send('Toggled Mute to true');
+                        });
+                    }
                 }
             }
-        }
-            
             break;
     }
 });
@@ -361,6 +332,7 @@ client.on('message', async (msg) => {
     var args = messageArray.slice(1).join(' ');
 
     var roles = {
+        vent: msg.guild.roles.find((r) => r.name == 'Venters'),
         muted: msg.guild.roles.find((r) => r.name == 'Muted'),
         nsfw: msg.guild.roles.find((r) => r.name == 'NSFW 🔞'),
         colors: {
@@ -401,7 +373,7 @@ client.on('message', async (msg) => {
         if (msg.author.id == client.user.id) {
             return;
         } else {
-            if (msg.content.toUpperCase() == '.NSFW') {
+            if (msg.content.toUpperCase() == prefix + 'NSFW') {
                 if (!msg.member.roles.find((r) => r.name == roles.nsfw.name)) {
                     msg.member.addRole(roles.nsfw);
                     msg.delete(1000);
@@ -462,6 +434,24 @@ client.on('message', async (msg) => {
                     break;
                 default:
                     msg.delete(1000);
+            }
+        }
+    }
+
+    if (msg.channel.id == ch_vent_acess_id) {
+        if (msg.author.id == client.user.id) {
+            return;
+        } else {
+            if (msg.content.toLowerCase() == prefix + 'vent') {
+                if (!msg.member.roles.find((r) => r.name == roles.vent.name)) {
+                    msg.member.addRole(roles.vent);
+                    msg.delete(1000);
+                } else {
+                    msg.member.removeRole(roles.vent);
+                    msg.delete(1000);
+                }
+            } else {
+                msg.delete(1000);
             }
         }
     }
