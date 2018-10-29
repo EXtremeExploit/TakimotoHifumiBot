@@ -161,7 +161,25 @@ client.on('guildMemberRemove', (member) => {
         .addField('User', member.user.tag + '/' + member.id + '\n' +
             '**Joined Discord:** ' + member.user.createdAt.toUTCString())
         .setTimestamp(new Date().toUTCString));
-})
+});
+
+client.on('messageDelete', async (msg) => {
+    if (!msg.guild.id == guild_id) return;
+    switch (msg.channel.id) {
+        case ch_logs_id:
+        case ch_nsfw_access_id:
+        case ch_name_color_id:
+        case ch_vent_acess_id: return;
+    }
+
+    sendToLogs(msg.guild, new discord.RichEmbed()
+    .setColor([255, 255, 0])
+    .setTitle('Message Deleted from:')
+    .setDescription('<#'+msg.channel.id+'>')
+    .addField('Content', msg.content)
+    .setTimestamp(msg.createdTimestamp)
+    .setFooter(msg.author.tag, msg.author.displayAvatarURL))
+});
 
 client.on('message', async (msg) => {
     if (!msg.guild) return;
