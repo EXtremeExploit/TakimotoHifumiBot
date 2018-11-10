@@ -17,11 +17,21 @@ var r = new _reddit({
 const reddit = new snoostorm(r);
 
 var prefix = process.env.prefix;
-var ch_arrivals_id = process.env.ch_arrivals_id;
-var ch_nsfw_access_id = process.env.ch_nsfw_access_id;
-var ch_name_color_id = process.env.ch_name_color_id;
-var ch_logs_id = process.env.ch_logs_id;
-var ch_vent_acess_id = process.env.ch_vent_acess_id;
+var channels = {
+    logs: {
+        id: process.env.ch_logs_id
+    },
+    arrivals: {
+        id: process.env.ch_arrivals_id
+    },
+    access: {
+        name: {
+            id: process.env.ch_name_id
+        },
+        id: process.env.ch_access
+    }
+
+}
 var guild_id = process.env.guild_id;
 var webhook = {
     id: process.env.webhook_ID,
@@ -78,7 +88,7 @@ async function toggleColorToMember(msg, role, roles) {
 }
 
 async function sendToLogs(guild, msg) {
-    guild.channels.find((ch) => ch.id == ch_logs_id).send(msg);
+    guild.channels.find((ch) => ch.id == channels.logs.id).send(msg);
 }
 
 client.on('ready', () => {
@@ -126,7 +136,7 @@ reddit.SubmissionStream({
 });
 
 client.on('guildMemberAdd', (member) => {
-    var channel = member.guild.channels.find((ch) => ch.id == ch_arrivals_id);
+    var channel = member.guild.channels.find((ch) => ch.id == channels.arrivals.id);
     var roles = {
         tester: member.guild.roles.find((r) => r.name == 'Tester ⚙️'),
         bot: member.guild.roles.find((r) => r.name == 'Robot 🤖'),
@@ -166,19 +176,18 @@ client.on('guildMemberRemove', (member) => {
 client.on('messageDelete', async (msg) => {
     if (!msg.guild.id == guild_id) return;
     switch (msg.channel.id) {
-        case ch_logs_id:
-        case ch_nsfw_access_id:
-        case ch_name_color_id:
-        case ch_vent_acess_id: return;
+        case channels.logs:
+        case channels.access.id:
+        case channels.access.name.id: return;
     }
 
     sendToLogs(msg.guild, new discord.RichEmbed()
-    .setColor([255, 255, 0])
-    .setTitle('Message Deleted from:')
-    .setDescription('<#'+msg.channel.id+'>')
-    .addField('Content', msg.content)
-    .setTimestamp(msg.createdTimestamp)
-    .setFooter(msg.author.tag, msg.author.displayAvatarURL))
+        .setColor([255, 255, 0])
+        .setTitle('Message Deleted from:')
+        .setDescription('<#' + msg.channel.id + '>')
+        .addField('Content', msg.content)
+        .setTimestamp(msg.createdTimestamp)
+        .setFooter(msg.author.tag, msg.author.displayAvatarURL))
 });
 
 client.on('message', async (msg) => {
@@ -191,21 +200,20 @@ client.on('message', async (msg) => {
     var args = messageArray.slice(1).join(' ');
 
     switch (command) {
-        case 'sendNSFWaccess':
-            if (msg.author.id == owner_id) {
-                client.guilds.find((g) => g.id == guild_id).channels.find((ch) => ch.id == ch_nsfw_access_id).send('Send `.NSFW` to get NSFW permissions, send again if you don\'t want them anymore');
-            }
-            break;
         case 'sendNAMECOLOR':
             if (msg.author.id == owner_id) {
-                client.guilds.find((g) => g.id == guild_id).channels.find((ch) => ch.id == ch_name_color_id).send({
+                client.guilds.find((g) => g.id == guild_id).channels.find((ch) => ch.id == channels.access.name.id).send({
                     file: './name-color.png'
                 });
             }
             break;
-        case 'sendVENT':
+        case 'sendAccess':
             if (msg.author.id == owner_id) {
-                client.guilds.find((g) => g.id == guild_id).channels.find((ch) => ch.id == ch_vent_acess_id).send('Send `.vent` to get permissions for vent, send again if you don\'t want them anymore')
+                client.guilds.find((g) => g.id == guild_id).channels.find((ch) => ch.id == channels.access.id).send(new discord.RichEmbed()
+                    .setColor(0x0000FF)
+                    .setTitle('Roles')
+                    .addField('NSFW', 'Send `.NSFW` to get NSFW permissions, send again if you don\'t want them anymore')
+                    .addField('Vent', 'Send `.vent` to get permissions for vent, send again if you don\'t want them anymore'));
             }
             break;
         case 'eval':
@@ -387,27 +395,9 @@ client.on('message', async (msg) => {
         }, cds * 1000)
     }
 
-    if (msg.channel.id == ch_nsfw_access_id) {
-        if (msg.author.id == client.user.id) {
-            return;
-        } else {
-            if (msg.content.toUpperCase() == prefix + 'NSFW') {
-                if (!msg.member.roles.find((r) => r.name == roles.nsfw.name)) {
-                    msg.member.addRole(roles.nsfw);
-                    msg.delete(1000);
-                } else {
-                    msg.member.removeRole(roles.nsfw);
-                    msg.delete(1000);
-                }
-            } else {
-                msg.delete(1000);
-            }
-        }
-    }
-
-    if (msg.channel.id == ch_name_color_id) {
+    if (msg.channel.id == channels.access.name.id) {
         if ((msg.author.id == client.user.id) == false) {
-            switch (msg.content) {
+            switch (msg.content.toLowerCase()) {
                 case '.purple':
                     toggleColorToMember(msg, roles.colors.purple, roles);
                     break;
@@ -456,7 +446,7 @@ client.on('message', async (msg) => {
         }
     }
 
-    if (msg.channel.id == ch_vent_acess_id) {
+    if (msg.channel.id == channels.access.id) {
         if (msg.author.id == client.user.id) {
             return;
         } else {
@@ -469,7 +459,17 @@ client.on('message', async (msg) => {
                     msg.delete(1000);
                 }
             } else {
-                msg.delete(1000);
+                if (msg.content.toLowerCase() = prefix + ' nsfw') {
+                    if (!msg.member.roles.find((r) => r.name == roles.nsfw.name)) {
+                        msg.member.addRole(roles.nsfw);
+                        msg.delete(1000);
+                    } else {
+                        msg.member.removeRole(roles.nsfw);
+                        msg.delete(1000);
+                    }
+                } else {
+                    msg.delete(1000);
+                }
             }
         }
     }
