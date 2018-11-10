@@ -459,7 +459,7 @@ client.on('message', async (msg) => {
                     msg.delete(1000);
                 }
             } else {
-                if (msg.content.toLowerCase() = prefix + ' nsfw') {
+                if (msg.content.toLowerCase() == prefix + ' nsfw') {
                     if (!msg.member.roles.find((r) => r.name == roles.nsfw.name)) {
                         msg.member.addRole(roles.nsfw);
                         msg.delete(1000);
