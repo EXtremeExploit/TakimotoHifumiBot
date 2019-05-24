@@ -105,7 +105,9 @@ client.on('ready', () => {
 });
 
 reddit.SubmissionStream({
-    subreddit: 'TakimotoHifumi'
+    subreddit: 'TakimotoHifumi',
+    pollTime: 5000,
+    results: 25
 }).on('submission', async (s) => {
     var embed = new discord.RichEmbed();
     if (s.preview) {
