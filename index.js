@@ -90,7 +90,10 @@ async function toggleColorToMember(msg, role, roles) {
 async function sendToLogs(guild, msg) {
     guild.channels.find((ch) => ch.id == channels.logs.id).send(msg);
 }
-
+//Reset the bot every 23 hours(82800000ms)
+setInterval(function() {
+	process.exit(1);
+}, 82800000);
 client.on('ready', () => {
     console.log('Ready!');
     client.user.setPresence({
