@@ -92,7 +92,7 @@ async function sendToLogs(guild, msg) {
 }
 //Reset the bot every 23 hours(82800000ms)
 setInterval(function() {
-	process.exit(1);
+	process.exit();
 }, 82800000);
 client.on('ready', () => {
     console.log('Ready!');
