@@ -464,5 +464,20 @@ client.on('message', async (msg) => {
     }
 });
 
+client.on('ready', () => {
+    console.log('Ready!')
+    client.user.setPresence({
+        afk: false,
+        status: 'online',
+        game: {
+            type: 'PLAYING',
+            name: 'mods: prefix .'
+        }
+    })
+})
+
+client.on('error', (err) => {
+    console.error(err);
+})
 
 client.login(process.env.TOKEN);
