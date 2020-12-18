@@ -128,8 +128,7 @@ client.on('guildMemberAdd', (member) => {
     var channel = member.guild.channels.find((ch) => ch.id == channels.arrivals.id);
     var roles = {
         tester: member.guild.roles.find((r) => r.name == 'Tester ⚙️'),
-        bot: member.guild.roles.find((r) => r.name == 'Robot 🤖'),
-        member: member.guild.roles.find((r) => r.name == 'Members 👤')
+        bot: member.guild.roles.find((r) => r.name == 'Robot 🤖')
     }
     channel.send('W-Welcome to the server ' + member + ' p-please enjoy your time here <a:HifumiSurprise:486547902660083723>', {
         file: './welcome.gif'
@@ -147,8 +146,6 @@ client.on('guildMemberAdd', (member) => {
     } else {
         if (testers.includes(member.id)) {
             member.addRole(roles.tester)
-        } else {
-            member.addRole(roles.member);
         }
     }
 });
