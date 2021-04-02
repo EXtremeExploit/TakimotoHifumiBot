@@ -56,7 +56,7 @@ async function toggleColorToMember(msg, role, roles) {
          * @param {discord.Role} role 
          */
 
-        await msg.member.removeRoles([
+        await msg.member.roles.removes([
             roles.colors.purple,
             roles.colors.magenta,
             roles.colors.pink,
@@ -73,11 +73,11 @@ async function toggleColorToMember(msg, role, roles) {
             roles.colors.dark_red,
         ]);
         await setTimeout(async function () {
-            await msg.member.addRole(role);
+            await msg.member.roles.add(role);
             await msg.delete(1000);
         }, 1000);
     } else {
-        await msg.member.removeRole(role);
+        await msg.member.roles.remove(role);
         msg.delete(1000);
     }
 }
@@ -107,7 +107,7 @@ client.on('guildMemberAdd', (member) => {
         .setTimestamp(new Date().toUTCString));
 
     if (member.user.bot)
-        member.addRole(roles.bot);
+        member.roles.add(roles.bot);
 });
 
 
@@ -121,7 +121,7 @@ client.on('guildMemberRemove', (member) => {
 });
 
 client.on('messageDelete', async (msg) => {
-    if (!msg.guild.id == guild_id) return;
+    if (msg.guild.id !== guild_id) return;
     switch (msg.channel.id) {
         case channels.logs.id:
         case channels.channels.id:
@@ -401,19 +401,19 @@ client.on('message', async (msg) => {
         } else {
             if (msg.content.toLowerCase() == prefix + 'vent') {
                 if (!msg.member.roles.cache.find((r) => r.name == roles.vent.name)) {
-                    msg.member.addRole(roles.vent);
+                    msg.member.roles.add(roles.vent);
                     msg.delete(1000);
                 } else {
-                    msg.member.removeRole(roles.vent);
+                    msg.member.roles.remove(roles.vent);
                     msg.delete(1000);
                 }
             } else {
                 if (msg.content.toLowerCase() == prefix + 'nsfw') {
                     if (!msg.member.roles.cache.find((r) => r.name == roles.nsfw.name)) {
-                        msg.member.addRole(roles.nsfw);
+                        msg.member.roles.add(roles.nsfw);
                         msg.delete(1000);
                     } else {
-                        msg.member.removeRole(roles.nsfw);
+                        msg.member.roles.remove(roles.nsfw);
                         msg.delete(1000);
                     }
                 } else {
