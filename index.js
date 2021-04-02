@@ -1,22 +1,21 @@
 require('dotenv').config();
 console.log('Starting...');
-// Discord
-var discord = require('discord.js');
-var client = new discord.Client();
-
-// Reddit
-var _reddit = require('snoowrap');
-var snoostorm = require('snoostorm');
-var r = new _reddit({
-    username: process.env.reddit_username,
-    password: process.env.reddit_password,
-    clientSecret: process.env.reddit_clientSecret,
-    clientId: process.env.reddit_clientID,
-    userAgent: 'r/TakimotoHifumi Discord Bot',
+const discord = require('discord.js');
+let client = new discord.Client({
+    http: {
+        api: 'https://discord.com/api',
+        cdn: 'https://cdn.discordapp.com'
+    }
 });
-const reddit = new snoostorm(r);
 
-var prefix = process.env.prefix;
+
+var fs = require('fs');
+
+var cooldown = new Set();
+var cds = 5;
+
+//#region Global variables
+let prefix = process.env.prefix;
 var channels = {
     logs: {
         id: process.env.ch_logs_id
@@ -24,13 +23,12 @@ var channels = {
     arrivals: {
         id: process.env.ch_arrivals_id
     },
-    access: {
-        name: {
-            id: process.env.ch_name_id
-        },
+    channels: {
         id: process.env.ch_access
+    },
+    colors: {
+        id: process.env.ch_name_id
     }
-
 }
 var guild_id = process.env.guild_id;
 var webhook = {
@@ -39,13 +37,10 @@ var webhook = {
 }
 var owner_id = process.env.owner_id;
 
-var fs = require('fs');
+var roles;
 
-var testers = [
-    483675893458403331
-];
-var cooldown = new Set();
-var cds = 5;
+let guild;
+//#endregion
 
 /**
  * 
@@ -54,7 +49,7 @@ var cds = 5;
  * @param {Object} roles
  */
 async function toggleColorToMember(msg, role, roles) {
-    if (!msg.member.roles.find((r) => r.name == role.name)) {
+    if (!msg.member.roles.cache.find((r) => r.name == role.name)) {
         /**
          * 
          * @param {discord.Message} msg 
@@ -87,71 +82,37 @@ async function toggleColorToMember(msg, role, roles) {
     }
 }
 
+//#region Log stuff
+
 async function sendToLogs(guild, msg) {
-    guild.channels.find((ch) => ch.id == channels.logs.id).send(msg);
+    guild.channels.cache.find((ch) => ch.id == channels.logs.id).send(msg);
 }
 
-reddit.SubmissionStream({
-    subreddit: 'TakimotoHifumi',
-    pollTime: 5000,
-    results: 25
-}).on('submission', async (s) => {
-    var embed = new discord.RichEmbed();
-    if (s.preview) {
-        embed.setColor([155, 89, 182])
-            .setURL('https://www.reddit.com' + s.permalink)
-            .setTitle(s.title)
-            .setImage(s.preview.images[0].source.url)
-            .addField('Author', '[' + s.author.name + '](https://www.reddit.com/u/' + s.author.name + ')', true);
-    } else {
-        if (s.selftext !== '') {
-            if (s.selftext.length > 2048) s.selftext = s.selftext.substring(0, 2048 - 3) + '...';
-            embed.setColor([155, 89, 182])
-                .setURL('https://www.reddit.com' + s.permalink)
-                .setTitle(s.title)
-                .setDescription(s.selftext)
-                .addField('Author', '[' + s.author.name + '](https://www.reddit.com/u/' + s.author.name + ')', true);
-        } else {
-            embed.setColor([155, 89, 182])
-                .setURL('https://www.reddit.com' + s.permalink)
-                .setTitle(s.title)
-                .addField('Author', '[' + s.author.name + '](https://www.reddit.com/u/' + s.author.name + ')', true);
-        }
-    }
-
-    client.fetchWebhook(webhook.id, webhook.token).then((w) => {
-        w.send(embed);
-    });
-});
 
 client.on('guildMemberAdd', (member) => {
-    var channel = member.guild.channels.find((ch) => ch.id == channels.arrivals.id);
+    var channel = member.guild.channels.cache.find((ch) => ch.id == channels.arrivals.id);
     var roles = {
-        tester: member.guild.roles.find((r) => r.name == 'Tester ⚙️'),
-        bot: member.guild.roles.find((r) => r.name == 'Robot 🤖')
+        tester: member.guild.roles.cache.find((r) => r.name == 'Tester ⚙️'),
+        bot: member.guild.roles.cache.find((r) => r.name == 'Robot 🤖')
     }
     channel.send('W-Welcome to the server ' + member + ' p-please enjoy your time here <a:HifumiSurprise:486547902660083723>', {
         file: './welcome.gif'
     });
 
-    sendToLogs(member.guild, new discord.RichEmbed()
+    sendToLogs(member.guild, new discord.MessageEmbed()
         .setTitle('User Joined')
         .setColor(0x00FF00)
         .addField('User', member.user.tag + '/' + member.id + '\n' +
             '**Joined Discord:** ' + member.user.createdAt.toUTCString())
         .setTimestamp(new Date().toUTCString));
 
-    if (member.user.bot) {
+    if (member.user.bot)
         member.addRole(roles.bot);
-    } else {
-        if (testers.includes(member.id)) {
-            member.addRole(roles.tester)
-        }
-    }
 });
 
+
 client.on('guildMemberRemove', (member) => {
-    sendToLogs(member.guild, new discord.RichEmbed()
+    sendToLogs(member.guild, new discord.MessageEmbed()
         .setTitle('User Removed')
         .setColor(0xFF0000)
         .addField('User', member.user.tag + '/' + member.id + '\n' +
@@ -162,40 +123,49 @@ client.on('guildMemberRemove', (member) => {
 client.on('messageDelete', async (msg) => {
     if (!msg.guild.id == guild_id) return;
     switch (msg.channel.id) {
-        case channels.logs:
-        case channels.access.id:
-        case channels.access.name.id: return;
+        case channels.logs.id:
+        case channels.channels.id:
+        case channels.colors.id: return;
     }
 
-    sendToLogs(msg.guild, new discord.RichEmbed()
+    let embed = new discord.MessageEmbed()
         .setColor([255, 255, 0])
         .setTitle('Message Deleted from:')
         .setDescription('<#' + msg.channel.id + '>')
-        .addField('Content', msg.content)
-        .setTimestamp(msg.createdTimestamp)
-        .setFooter(msg.author.tag, msg.author.displayAvatarURL))
+    if (msg.content)
+        embed.addField('Content', msg.content);
+    if(msg.attachments)
+        embed.setImage(msg.attachments.first().url);
+    embed.setTimestamp(msg.createdTimestamp);
+    embed.setFooter(msg.author.tag, msg.author.displayAvatarURL({ dynamic: true, size: 1024, format: `png` }));
+
+
+    sendToLogs(msg.guild, embed)
 });
 
+//#endregion
+
+
+//Commands
 client.on('message', async (msg) => {
     if (!msg.guild) return;
     if (!msg.content.startsWith(prefix)) return;
 
     var messageArray = msg.content.split(' ');
-    var prefix_command = messageArray[0];
     var command = messageArray[0].replace(prefix, '');
     var args = messageArray.slice(1).join(' ');
 
     switch (command) {
         case 'sendNAMECOLOR':
             if (msg.author.id == owner_id) {
-                client.guilds.find((g) => g.id == guild_id).channels.find((ch) => ch.id == channels.access.name.id).send({
+                client.guilds.find((g) => g.id == guild_id).channels.cache.find((ch) => ch.id == channels.colors.id).send({
                     file: './name-color.png'
                 });
             }
             break;
         case 'sendAccess':
             if (msg.author.id == owner_id) {
-                client.guilds.find((g) => g.id == guild_id).channels.find((ch) => ch.id == channels.access.id).send(new discord.RichEmbed()
+                client.guilds.find((g) => g.id == guild_id).channels.cache.find((ch) => ch.id == channels.channels.id).send(new discord.MessageEmbed()
                     .setColor(0x0000FF)
                     .setTitle('Roles')
                     .addField('NSFW', 'Send `.NSFW` to get NSFW permissions, send again if you don\'t want them anymore')
@@ -209,13 +179,13 @@ client.on('message', async (msg) => {
                     var evaled = eval(code);
                     if (typeof evaled !== 'string')
                         evaled = require('util').inspect(evaled);
-                    msg.channel.send(new discord.RichEmbed()
+                    msg.channel.send(new discord.MessageEmbed()
                         .setColor([255, 0, 0])
                         .setTitle('Eval Command')
                         .addField('Input', `\`\`\`\n${code}\n\`\`\``)
                         .addField('Output:', `\`\`\`xl\n${evaled}\`\`\``));
                 } catch (err) {
-                    msg.channel.send(new discord.RichEmbed()
+                    msg.channel.send(new discord.MessageEmbed()
                         .setTitle('ERROR')
                         .setColor([255, 0, 0])
                         .setDescription('```xl\n' + err + '```'));
@@ -226,26 +196,26 @@ client.on('message', async (msg) => {
             if (msg.member.hasPermission(['KICK_MEMBERS']) || msg.member.hasPermission(['ADMINISTRATOR'])) {
                 if (msg.mentions.members.first()) {
                     if (msg.member.user.id == msg.mentions.members.first().id) {
-                        msg.channel.send(new discord.RichEmbed()
+                        msg.channel.send(new discord.MessageEmbed()
                             .setColor([255, 0, 0])
                             .setDescription('Why do you want to kick yourself...?')
                             .setTitle('Are you serious?'));
                     } else {
                         if (msg.mentions.members.first().id == client.user.id) {
-                            msg.channel.send(new discord.RichEmbed()
+                            msg.channel.send(new discord.MessageEmbed()
                                 .setColor([255, 0, 0])
                                 .setDescription('WHY ME!!!???')
                                 .setTitle(';-;'));
                         } else {
                             if (msg.mentions.members.first().kickable) {
                                 msg.mentions.members.first().kick(".kick command by: " + msg.author.tag).then((member) => {
-                                    msg.channel.send(new discord.RichEmbed()
+                                    msg.channel.send(new discord.MessageEmbed()
                                         .setColor([255, 0, 0])
                                         .setTitle('Kicked')
                                         .setDescription('Succesfully kicked: ' + member.user.tag + ' by ' + msg.author.tag));
                                 });
                             } else {
-                                msg.channel.send(new discord.RichEmbed()
+                                msg.channel.send(new discord.MessageEmbed()
                                     .setColor([255, 0, 0])
                                     .setTitle('Kick Error')
                                     .setDescription('I don\'t have permissions to do that'));
@@ -253,14 +223,14 @@ client.on('message', async (msg) => {
                         }
                     }
                 } else {
-                    msg.channel.send(new discord.RichEmbed()
+                    msg.channel.send(new discord.MessageEmbed()
                         .setColor([255, 0, 0])
                         .setDescription('Please specify an user!'));
 
                 }
             } else {
-                msg.channel.send(new discord.RichEmbed()
-                    .setAuthor(msg.member.user.username, msg.member.user.displayAvatarURL)
+                msg.channel.send(new discord.MessageEmbed()
+                    .setAuthor(msg.member.user.username, msg.member.user.displayAvatarURL({ dynamic: true, size: 1024, format: `png` }))
                     .setTitle('ERROR')
                     .setDescription('You dont have permissions to run that command.')
                     .setColor([255, 0, 0]));
@@ -270,30 +240,30 @@ client.on('message', async (msg) => {
             if (msg.member.hasPermission(['BAN_MEMBERS']) || msg.member.hasPermission(['ADMINISTRATOR'])) {
                 if (msg.mentions.members.first()) {
                     if (msg.member.user.id == msg.mentions.members.first().id) {
-                        msg.channel.send(new discord.RichEmbed()
+                        msg.channel.send(new discord.MessageEmbed()
                             .setColor([255, 0, 0])
                             .setDescription('Why do you want to ban yourself...?')
                             .setTitle('Are you serious?'));
                     } else {
                         if (msg.mentions.members.first().id == client.user.id) {
-                            msg.channel.send(new discord.RichEmbed()
+                            msg.channel.send(new discord.MessageEmbed()
                                 .setColor([255, 0, 0])
                                 .setDescription('WHY ME!!!???')
                                 .setTitle(';-;'));
                         } else {
                             if (msg.mentions.members.first().bannable) {
                                 msg.mentions.members.first().ban({ reason: ".ban command by: " + msg.author.tag }).then((member) => {
-                                    msg.channel.send(new discord.RichEmbed()
+                                    msg.channel.send(new discord.MessageEmbed()
                                         .setColor([255, 0, 0])
                                         .setTitle('Banned')
                                         .setDescription('Succesfully banned: ' + member.user.tag + ' by ' + msg.author.tag));
-                                    sendToLogs(msg.guild, new discord.RichEmbed()
+                                    sendToLogs(msg.guild, new discord.MessageEmbed()
                                         .setTitle('User Banned')
                                         .setColor([255, 0, 0])
                                         .addField('By', msg.author.tag))
                                 });
                             } else {
-                                msg.channel.send(new discord.RichEmbed()
+                                msg.channel.send(new discord.MessageEmbed()
                                     .setColor([255, 0, 0])
                                     .setTitle('Ban Error')
                                     .setDescription('I don\'t have permissions to do that'));
@@ -301,14 +271,14 @@ client.on('message', async (msg) => {
                         }
                     }
                 } else {
-                    msg.channel.send(new discord.RichEmbed()
+                    msg.channel.send(new discord.MessageEmbed()
                         .setColor([255, 0, 0])
                         .setDescription('Please specify an user!'));
 
                 }
             } else {
-                msg.channel.send(new discord.RichEmbed()
-                    .setAuthor(msg.member.user.username, msg.member.user.displayAvatarURL)
+                msg.channel.send(new discord.MessageEmbed()
+                    .setAuthor(msg.member.user.username, msg.member.user.displayAvatarURL({ dynamic: true, size: 1024, format: `png` }))
                     .setTitle('ERROR')
                     .setDescription('You dont have permissions to run that command.')
                     .setColor([255, 0, 0]));
@@ -332,39 +302,27 @@ client.on('message', async (msg) => {
                 }
             }
             break;
+        case 'ping':
+            msg.channel.send(new discord.MessageEmbed()
+                .setTitle(`Pinging...`)
+                .setColor([0, 0, 255])).then((pingMsg) => {
+                    pingMsg.edit(new discord.MessageEmbed()
+                        .setColor([255, 0, 0])
+                        .setTitle(`Pong!`)
+                        .setTimestamp(new Date())
+                        .addField(`Bot`, `**${pingMsg.createdTimestamp - msg.createdTimestamp}ms.**`, true)
+                        .addField(`WebSocket`, `**${client.ws.ping}ms.**`, true));
+                });
+            break;
     }
 });
 
+
+// Cooldown, colors and channel access
 client.on('message', async (msg) => {
     if (!msg.guild) return;
 
-    var messageArray = msg.content.split(' ');
-    var prefix_command = messageArray[0];
-    var command = messageArray[0].replace(prefix, '');
-    var args = messageArray.slice(1).join(' ');
-
-    var roles = {
-        vent: msg.guild.roles.find((r) => r.name == 'Venters'),
-        muted: msg.guild.roles.find((r) => r.name == 'Muted'),
-        nsfw: msg.guild.roles.find((r) => r.name == 'NSFW 🔞'),
-        colors: {
-            purple: msg.guild.roles.find((r) => r.name == 'Purple'),
-            magenta: msg.guild.roles.find((r) => r.name == 'Magenta'),
-            pink: msg.guild.roles.find((r) => r.name == 'Pink'),
-            cyan: msg.guild.roles.find((r) => r.name == 'Cyan'),
-            blue: msg.guild.roles.find((r) => r.name == 'Blue'),
-            dark_blue: msg.guild.roles.find((r) => r.name == 'Dark Blue'),
-            green: msg.guild.roles.find((r) => r.name == 'Green'),
-            navy: msg.guild.roles.find((r) => r.name == 'Navy'),
-            yellow: msg.guild.roles.find((r) => r.name == 'Yellow'),
-            gold: msg.guild.roles.find((r) => r.name == 'Gold'),
-            brown: msg.guild.roles.find((r) => r.name == 'Brown'),
-            orange: msg.guild.roles.find((r) => r.name == 'Orange'),
-            red: msg.guild.roles.find((r) => r.name == 'Red'),
-            dark_red: msg.guild.roles.find((r) => r.name == 'Dark Red'),
-        }
-    }
-
+    //#region Cooldown
     if (require('./config.json').mute == true) {
         if (cooldown.has(msg.author.id)) {
             msg.delete(100);
@@ -377,11 +335,13 @@ client.on('message', async (msg) => {
             cooldown.add(msg.author.id);
         }
         setTimeout(() => {
-            cooldown.delete(msg.author.id)
+            cooldown.delete(msg.author.id);
         }, cds * 1000)
     }
+    //#endregion
 
-    if (msg.channel.id == channels.access.name.id) {
+    //#region Colors
+    if (msg.channel.id == channels.colors.id) {
         if ((msg.author.id == client.user.id) == false) {
             switch (msg.content.toLowerCase()) {
                 case '.purple':
@@ -431,13 +391,16 @@ client.on('message', async (msg) => {
             }
         }
     }
+    //#endregion
 
-    if (msg.channel.id == channels.access.id) {
+
+    //#region Channels
+    if (msg.channel.id == channels.channels.id) {
         if (msg.author.id == client.user.id) {
             return;
         } else {
             if (msg.content.toLowerCase() == prefix + 'vent') {
-                if (!msg.member.roles.find((r) => r.name == roles.vent.name)) {
+                if (!msg.member.roles.cache.find((r) => r.name == roles.vent.name)) {
                     msg.member.addRole(roles.vent);
                     msg.delete(1000);
                 } else {
@@ -446,7 +409,7 @@ client.on('message', async (msg) => {
                 }
             } else {
                 if (msg.content.toLowerCase() == prefix + 'nsfw') {
-                    if (!msg.member.roles.find((r) => r.name == roles.nsfw.name)) {
+                    if (!msg.member.roles.cache.find((r) => r.name == roles.nsfw.name)) {
                         msg.member.addRole(roles.nsfw);
                         msg.delete(1000);
                     } else {
@@ -459,8 +422,12 @@ client.on('message', async (msg) => {
             }
         }
     }
+    //#endregion
 });
 
+
+
+//General events
 client.on('ready', () => {
     console.log('Ready!')
     client.user.setPresence({
@@ -470,7 +437,31 @@ client.on('ready', () => {
             type: 'PLAYING',
             name: 'mods: prefix .'
         }
-    })
+    });
+
+    guild = client.guilds.cache.find((g) => g.id == guild_id);
+
+    roles = {
+        vent: guild.roles.cache.find((r) => r.name == 'Venters'),
+        muted: guild.roles.cache.find((r) => r.name == 'Muted'),
+        nsfw: guild.roles.cache.find((r) => r.name == 'NSFW 🔞'),
+        colors: {
+            purple: guild.roles.cache.find((r) => r.name == 'Purple'),
+            magenta: guild.roles.cache.find((r) => r.name == 'Magenta'),
+            pink: guild.roles.cache.find((r) => r.name == 'Pink'),
+            cyan: guild.roles.cache.find((r) => r.name == 'Cyan'),
+            blue: guild.roles.cache.find((r) => r.name == 'Blue'),
+            dark_blue: guild.roles.cache.find((r) => r.name == 'Dark Blue'),
+            green: guild.roles.cache.find((r) => r.name == 'Green'),
+            navy: guild.roles.cache.find((r) => r.name == 'Navy'),
+            yellow: guild.roles.cache.find((r) => r.name == 'Yellow'),
+            gold: guild.roles.cache.find((r) => r.name == 'Gold'),
+            brown: guild.roles.cache.find((r) => r.name == 'Brown'),
+            orange: guild.roles.cache.find((r) => r.name == 'Orange'),
+            red: guild.roles.cache.find((r) => r.name == 'Red'),
+            dark_red: guild.roles.cache.find((r) => r.name == 'Dark Red'),
+        }
+    }
 })
 
 client.on('error', (err) => {

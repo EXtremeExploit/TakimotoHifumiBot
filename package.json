@@ -17,9 +17,7 @@
   },
   "homepage": "https://github.com/EXtremeExploit/TakimotoHifumiBot#readme",
   "dependencies": {
-    "discord.js": "^11.4.2",
-    "dotenv": "^6.0.0",
-    "snoostorm": "0.0.5",
-    "snoowrap": "^1.15.2"
+    "discord.js": "^12.5.3",
+    "dotenv": "^6.0.0"
   }
 }
