@@ -74,11 +74,11 @@ async function toggleColorToMember(msg, role, roles) {
         ]);
         await setTimeout(async function () {
             await msg.member.roles.add(role);
-            await msg.delete(1000);
+            await msg.delete({ timeout: 1000 });
         }, 1000);
     } else {
         await msg.member.roles.remove(role);
-        msg.delete(1000);
+        msg.delete({ timeout: 1000 });
     }
 }
 
@@ -134,13 +134,13 @@ client.on('messageDelete', async (msg) => {
         .setDescription('<#' + msg.channel.id + '>')
     if (msg.content)
         embed.addField('Content', msg.content);
-    if(msg.attachments)
+    if (msg.attachments)
         embed.setImage(msg.attachments.first().url);
     embed.setTimestamp(msg.createdTimestamp);
     embed.setFooter(msg.author.tag, msg.author.displayAvatarURL({ dynamic: true, size: 1024, format: `png` }));
 
 
-    sendToLogs(msg.guild, embed)
+    guild.channels.cache.find((ch) => ch.id == channels.logs.id).send(embed);
 });
 
 //#endregion
@@ -325,9 +325,9 @@ client.on('message', async (msg) => {
     //#region Cooldown
     if (require('./config.json').mute == true) {
         if (cooldown.has(msg.author.id)) {
-            msg.delete(100);
+            msg.delete({ timeout: 100 });
             msg.reply('Don\'t spam, wait atleast 5 secs').then((message) => {
-                message.delete(cds * 1000);
+                message.delete({ timeout: cds * 1000 });
             });
         }
         if (msg.author.id == client.user.id) {
@@ -387,41 +387,41 @@ client.on('message', async (msg) => {
                     toggleColorToMember(msg, roles.colors.dark_red, roles);
                     break;
                 default:
-                    msg.delete(1000);
+                    msg.delete({ timeout: 1000 });
             }
         }
     }
-    //#endregion
+//#endregion
 
 
-    //#region Channels
-    if (msg.channel.id == channels.channels.id) {
-        if (msg.author.id == client.user.id) {
-            return;
+//#region Channels
+if (msg.channel.id == channels.channels.id) {
+    if (msg.author.id == client.user.id) {
+        return;
+    } else {
+        if (msg.content.toLowerCase() == prefix + 'vent') {
+            if (!msg.member.roles.cache.find((r) => r.name == roles.vent.name)) {
+                msg.member.roles.add(roles.vent);
+                msg.delete({ timeout: 1000 });
+            } else {
+                msg.member.roles.remove(roles.vent);
+                msg.delete({ timeout: 1000 });
+            }
         } else {
-            if (msg.content.toLowerCase() == prefix + 'vent') {
-                if (!msg.member.roles.cache.find((r) => r.name == roles.vent.name)) {
-                    msg.member.roles.add(roles.vent);
-                    msg.delete(1000);
+            if (msg.content.toLowerCase() == prefix + 'nsfw') {
+                if (!msg.member.roles.cache.find((r) => r.name == roles.nsfw.name)) {
+                    msg.member.roles.add(roles.nsfw);
+                    msg.delete({ timeout: 1000 });
                 } else {
-                    msg.member.roles.remove(roles.vent);
-                    msg.delete(1000);
+                    msg.member.roles.remove(roles.nsfw);
+                    msg.delete({ timeout: 1000 });
                 }
             } else {
-                if (msg.content.toLowerCase() == prefix + 'nsfw') {
-                    if (!msg.member.roles.cache.find((r) => r.name == roles.nsfw.name)) {
-                        msg.member.roles.add(roles.nsfw);
-                        msg.delete(1000);
-                    } else {
-                        msg.member.roles.remove(roles.nsfw);
-                        msg.delete(1000);
-                    }
-                } else {
-                    msg.delete(1000);
-                }
+                msg.delete({ timeout: 1000 });
             }
         }
     }
+}
     //#endregion
 });
 
