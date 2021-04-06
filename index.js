@@ -134,8 +134,6 @@ client.on('messageDelete', async (msg) => {
         .setDescription('<#' + msg.channel.id + '>')
     if (msg.content)
         embed.addField('Content', msg.content);
-    if (msg.attachments)
-        embed.setImage(msg.attachments.first().url);
     embed.setTimestamp(msg.createdTimestamp);
     embed.setFooter(msg.author.tag, msg.author.displayAvatarURL({ dynamic: true, size: 1024, format: `png` }));
 
