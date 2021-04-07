@@ -9,7 +9,7 @@
             "type": "node",
             "request": "launch",
             "name": "Iniciar programa",
-            "program": "${workspaceFolder}\\index.js",
+            "program": "${workspaceFolder}/index.js",
             "envFile": "${workspaceFolder}/.env",
             "cwd": "${workspaceFolder}"
         }

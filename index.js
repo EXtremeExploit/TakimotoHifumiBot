@@ -8,12 +8,6 @@ let client = new discord.Client({
     }
 });
 
-
-var fs = require('fs');
-
-var cooldown = new Set();
-var cds = 5;
-
 //#region Global variables
 let prefix = process.env.prefix;
 var channels = {
@@ -31,10 +25,6 @@ var channels = {
     }
 }
 var guild_id = process.env.guild_id;
-var webhook = {
-    id: process.env.webhook_ID,
-    token: process.env.webhook_Token
-}
 var owner_id = process.env.owner_id;
 
 var roles;
@@ -49,13 +39,7 @@ let guild;
  * @param {Object} roles
  */
 async function toggleColorToMember(msg, role, roles) {
-    if (!msg.member.roles.cache.find((r) => r.name == role.name)) {
-        /**
-         * 
-         * @param {discord.Message} msg 
-         * @param {discord.Role} role 
-         */
-
+    if (!msg.member.roles.cache.find((r) => r.name == role.name)) {// If user doesn't have the role
         await msg.member.roles.removes([
             roles.colors.purple,
             roles.colors.magenta,
@@ -72,18 +56,20 @@ async function toggleColorToMember(msg, role, roles) {
             roles.colors.red,
             roles.colors.dark_red,
         ]);
+        //Remove any color roles
+        //Then add the color the user wants one second later to avoid rate limiting
+        //And weird visual bug
         await setTimeout(async function () {
             await msg.member.roles.add(role);
             await msg.delete({ timeout: 1000 });
         }, 1000);
-    } else {
+    } else {//If user has specified color then remove it
         await msg.member.roles.remove(role);
         msg.delete({ timeout: 1000 });
     }
 }
 
 //#region Log stuff
-
 async function sendToLogs(guild, msg) {
     guild.channels.cache.find((ch) => ch.id == channels.logs.id).send(msg);
 }
@@ -170,26 +156,6 @@ client.on('message', async (msg) => {
                     .addField('Vent', 'Send `.vent` to get permissions for vent, send again if you don\'t want them anymore'));
             }
             break;
-        case 'eval':
-            if (msg.author.id == owner_id) {
-                try {
-                    const code = args;
-                    var evaled = eval(code);
-                    if (typeof evaled !== 'string')
-                        evaled = require('util').inspect(evaled);
-                    msg.channel.send(new discord.MessageEmbed()
-                        .setColor([255, 0, 0])
-                        .setTitle('Eval Command')
-                        .addField('Input', `\`\`\`\n${code}\n\`\`\``)
-                        .addField('Output:', `\`\`\`xl\n${evaled}\`\`\``));
-                } catch (err) {
-                    msg.channel.send(new discord.MessageEmbed()
-                        .setTitle('ERROR')
-                        .setColor([255, 0, 0])
-                        .setDescription('```xl\n' + err + '```'));
-                }
-            }
-            break;
         case 'kick':
             if (msg.member.hasPermission(['KICK_MEMBERS']) || msg.member.hasPermission(['ADMINISTRATOR'])) {
                 if (msg.mentions.members.first()) {
@@ -224,7 +190,6 @@ client.on('message', async (msg) => {
                     msg.channel.send(new discord.MessageEmbed()
                         .setColor([255, 0, 0])
                         .setDescription('Please specify an user!'));
-
                 }
             } else {
                 msg.channel.send(new discord.MessageEmbed()
@@ -272,7 +237,6 @@ client.on('message', async (msg) => {
                     msg.channel.send(new discord.MessageEmbed()
                         .setColor([255, 0, 0])
                         .setDescription('Please specify an user!'));
-
                 }
             } else {
                 msg.channel.send(new discord.MessageEmbed()
@@ -280,24 +244,6 @@ client.on('message', async (msg) => {
                     .setTitle('ERROR')
                     .setDescription('You dont have permissions to run that command.')
                     .setColor([255, 0, 0]));
-            }
-            break;
-        case 'toggleMute':
-            if (msg.member.hasPermission(['ADMINISTRATOR'])) {
-                var config = require('./config.json');
-                if (config.mute == true) {
-                    config.mute = false;
-                    fs.writeFile('config.json', '{\n    "mute": false\n}', (e) => {
-                        msg.channel.send('Toggled Mute to false');
-                    });
-                } else {
-                    if (config.mute == false) {
-                        config.mute = true;
-                        fs.writeFile('config.json', '{\n    "mute": true\n}', (e) => {
-                            msg.channel.send('Toggled Mute to true');
-                        });
-                    }
-                }
             }
             break;
         case 'ping':
@@ -316,114 +262,83 @@ client.on('message', async (msg) => {
 });
 
 
-// Cooldown, colors and channel access
+// Colors and Channel Access
 client.on('message', async (msg) => {
     if (!msg.guild) return;
 
-    //#region Cooldown
-    if (require('./config.json').mute == true) {
-        if (cooldown.has(msg.author.id)) {
-            msg.delete({ timeout: 100 });
-            msg.reply('Don\'t spam, wait atleast 5 secs').then((message) => {
-                message.delete({ timeout: cds * 1000 });
-            });
-        }
-        if (msg.author.id == client.user.id) {
-        } else {
-            cooldown.add(msg.author.id);
-        }
-        setTimeout(() => {
-            cooldown.delete(msg.author.id);
-        }, cds * 1000)
-    }
-    //#endregion
+    if(msg.author.id == client.user.id) return;
 
     //#region Colors
     if (msg.channel.id == channels.colors.id) {
-        if ((msg.author.id == client.user.id) == false) {
-            switch (msg.content.toLowerCase()) {
-                case '.purple':
-                    toggleColorToMember(msg, roles.colors.purple, roles);
-                    break;
-                case '.magenta':
-                    toggleColorToMember(msg, roles.colors.magenta, roles);
-                    break;
-                case '.pink':
-                    toggleColorToMember(msg, roles.colors.pink, roles);
-                    break;
-                case '.cyan':
-                    toggleColorToMember(msg, roles.colors.cyan, roles);
-                    break;
-                case '.blue':
-                    toggleColorToMember(msg, roles.colors.blue, roles);
-                    break;
-                case '.darkblue':
-                    toggleColorToMember(msg, roles.colors.dark_blue, roles);
-                    break;
-                case '.green':
-                    toggleColorToMember(msg, roles.colors.green, roles);
-                    break;
-                case '.navy':
-                    toggleColorToMember(msg, roles.colors.navy, roles);
-                    break;
-                case '.yellow':
-                    toggleColorToMember(msg, roles.colors.yellow, roles);
-                    break;
-                case '.gold':
-                    toggleColorToMember(msg, roles.colors.gold, roles);
-                    break;
-                case '.brown':
-                    toggleColorToMember(msg, roles.colors.brown, roles);
-                    break;
-                case '.orange':
-                    toggleColorToMember(msg, roles.colors.orange, roles);
-                    break;
-                case '.red':
-                    toggleColorToMember(msg, roles.colors.red, roles);
-                    break;
-                case '.darkred':
-                    toggleColorToMember(msg, roles.colors.dark_red, roles);
-                    break;
-                default:
-                    msg.delete({ timeout: 1000 });
-            }
+        switch (msg.content.toLowerCase()) {
+            case '.purple':
+                toggleColorToMember(msg, roles.colors.purple, roles);
+                break;
+            case '.magenta':
+                toggleColorToMember(msg, roles.colors.magenta, roles);
+                break;
+            case '.pink':
+                toggleColorToMember(msg, roles.colors.pink, roles);
+                break;
+            case '.cyan':
+                toggleColorToMember(msg, roles.colors.cyan, roles);
+                break;
+            case '.blue':
+                toggleColorToMember(msg, roles.colors.blue, roles);
+                break;
+            case '.darkblue':
+                toggleColorToMember(msg, roles.colors.dark_blue, roles);
+                break;
+            case '.green':
+                toggleColorToMember(msg, roles.colors.green, roles);
+                break;
+            case '.navy':
+                toggleColorToMember(msg, roles.colors.navy, roles);
+                break;
+            case '.yellow':
+                toggleColorToMember(msg, roles.colors.yellow, roles);
+                break;
+            case '.gold':
+                toggleColorToMember(msg, roles.colors.gold, roles);
+                break;
+            case '.brown':
+                toggleColorToMember(msg, roles.colors.brown, roles);
+                break;
+            case '.orange':
+                toggleColorToMember(msg, roles.colors.orange, roles);
+                break;
+            case '.red':
+                toggleColorToMember(msg, roles.colors.red, roles);
+                break;
+            case '.darkred':
+                toggleColorToMember(msg, roles.colors.dark_red, roles);
+                break;
+            default:
+                msg.delete({ timeout: 1000 });
         }
     }
-//#endregion
+    //#endregion
 
 
-//#region Channels
-if (msg.channel.id == channels.channels.id) {
-    if (msg.author.id == client.user.id) {
-        return;
-    } else {
+    //#region Channels
+    if (msg.channel.id == channels.channels.id) {
         if (msg.content.toLowerCase() == prefix + 'vent') {
             if (!msg.member.roles.cache.find((r) => r.name == roles.vent.name)) {
                 msg.member.roles.add(roles.vent);
-                msg.delete({ timeout: 1000 });
             } else {
                 msg.member.roles.remove(roles.vent);
-                msg.delete({ timeout: 1000 });
             }
-        } else {
-            if (msg.content.toLowerCase() == prefix + 'nsfw') {
-                if (!msg.member.roles.cache.find((r) => r.name == roles.nsfw.name)) {
-                    msg.member.roles.add(roles.nsfw);
-                    msg.delete({ timeout: 1000 });
-                } else {
-                    msg.member.roles.remove(roles.nsfw);
-                    msg.delete({ timeout: 1000 });
-                }
+        } else if (msg.content.toLowerCase() == prefix + 'nsfw') {
+            if (!msg.member.roles.cache.find((r) => r.name == roles.nsfw.name)) {
+                msg.member.roles.add(roles.nsfw);
             } else {
-                msg.delete({ timeout: 1000 });
+                msg.member.roles.remove(roles.nsfw);
             }
         }
+        msg.delete({ timeout: 1000 });
     }
-}
     //#endregion
 });
-
-
 
 //General events
 client.on('ready', () => {
@@ -441,7 +356,6 @@ client.on('ready', () => {
 
     roles = {
         vent: guild.roles.cache.find((r) => r.name == 'Venters'),
-        muted: guild.roles.cache.find((r) => r.name == 'Muted'),
         nsfw: guild.roles.cache.find((r) => r.name == 'NSFW 🔞'),
         colors: {
             purple: guild.roles.cache.find((r) => r.name == 'Purple'),
